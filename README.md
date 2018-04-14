@@ -1,2 +1,2 @@
-# sophconf
+# sophconfig
 golang config pkg
