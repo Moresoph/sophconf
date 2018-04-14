@@ -2,6 +2,7 @@ package sophconf
 
 import (
 	"bufio"
+	"fmt"
 	"os"
 	"path"
 	"strings"
@@ -13,7 +14,7 @@ const (
 
 func parseKeyValue(line string) (key, value string, err error) {
 	// remove comments
-	keyAndValue = strings.Split(line, Separator)
+	keyAndValue := strings.Split(line, Separator)
 	if len(keyAndValue) != 2 {
 		err = fmt.Errorf("can't split line=%v with space", line)
 		return
@@ -33,7 +34,7 @@ func getOneLine(scanner *bufio.Scanner) (line string, ok bool) {
 		if strings.HasSuffix(line, "\\") {
 			// merge line ends with backslash
 			line = line[:len(line)-1]
-			whole_line += line
+			retLine += line
 			continue
 		}
 		retLine += line
@@ -54,7 +55,7 @@ func LoadConfFile(filename string) (ret map[string]string, err error) {
 	scanner := bufio.NewScanner(file)
 	lastKey := ""
 	for {
-		line, ok := getWholeLine(scanner)
+		line, ok := getOneLine(scanner)
 		if ok != true {
 			break
 		}
@@ -70,13 +71,14 @@ func LoadConfFile(filename string) (ret map[string]string, err error) {
 	}
 
 	if lastKey == "include" {
-		includeFile := value
+		includeFile := ret[lastKey]
 		if strings.HasPrefix(includeFile, "/") == false {
 			includeFile = basename + "/" + includeFile
 		}
-		includeConf, err := LoadConfFile(include_file)
+		includeConf, err := LoadConfFile(includeFile)
 		if err != nil {
-			continue
+			err := fmt.Errorf("load include file=%v failed err=%v", includeFile, err)
+			return nil, err
 		}
 		// merge sub conf
 		for k, v := range includeConf {
